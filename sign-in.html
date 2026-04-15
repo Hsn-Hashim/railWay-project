@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Smart RailWay - Login</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="logInCard">
+        <h1 id="mainTitle">Welcome to Smart RailWay!</h1>
+
+        <div class="toggle-container" id="toggleSwitch">
+            <div class="toggle-bg"></div> <span class="toggle-option active" id="userOption">User</span>
+            <span class="toggle-option" id="adminOption">Admin</span>
+        </div>
+
+        <form id="userForm">
+            <div class="textInput">
+                <label for="user-id">Username</label>
+                <input type="text" id="user-id" required>
+            </div>
+            <div class="textInput">
+                <label for="user-pass">Password</label>
+                <input type="password" id="user-pass" required>
+            </div>
+            <button type="submit" class="sub-button">Log in as User</button>
+        </form>
+
+        <form id="adminForm" class="hidden">
+            <div class="textInput">
+                <label for="admin-id">Admin ID</label>
+                <input type="text" id="admin-id" >
+            </div>
+            <div class="textInput">
+                <label for="admin-pass">Password</label>
+                <input type="password" id="admin-pass" >
+            </div>
+            <button type="submit" class="sub-button admin-btn" onclick="buildPage()">Log in as Admin</button>
+        </form>
+    </div>
+
+    <script src="c.js"></script>
+</body>
+</html>
