@@ -6,13 +6,21 @@ const userOption = document.getElementById('userOption');
 const adminOption = document.getElementById('adminOption');
 var isUser = false;
 
-function buildPage(){
-    if(isUser)
-        window.location.href ="userPage.html" ;
-    else
+function buildPage(event) {
+    event.preventDefault();
+    // نمسك حاوية التبديل لنعرف الحالة الحالية
+    const toggleSwitch = document.getElementById('toggleSwitch');
+    
+    // نفحص هل كلاس 'admin-active' موجود حالياً؟
+    const isAdminActive = toggleSwitch.classList.contains('admin-active');
+
+    if (isAdminActive) {
+        // إذا كان المفتاح على الأدمن، وجهه لصفحة الإدارة
         window.location.href = "adminPage.html";
-
-
+    } else {
+        // إذا كان على اليوزر، وجهه لصفحة المستخدم
+        window.location.href = "userPage.html";
+    }
 }
 toggleSwitch.addEventListener('click', () => {
     // تبديل الكلاسات عند الضغط
