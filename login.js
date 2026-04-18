@@ -5,6 +5,9 @@ const mainTitle = document.getElementById('mainTitle');
 const userOption = document.getElementById('userOption');
 const adminOption = document.getElementById('adminOption');
 var isUser = false;
+const supabaseUrl = 'https://mulbvyywnrlqlqvgjtzp.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11bGJ2eXl3bnJscWxxdmdqdHpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0NDE1MjQsImV4cCI6MjA5MjAxNzUyNH0.IeS8h8ptvZJoFU_pR7JuCQooAp4lxw2TFTwn7zZV8Uc';
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 function buildPage(event) {
     event.preventDefault();
