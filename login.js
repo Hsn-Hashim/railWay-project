@@ -7,21 +7,42 @@ const adminOption = document.getElementById('adminOption');
 var isUser = false;
 const supabaseUrl = 'https://mulbvyywnrlqlqvgjtzp.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11bGJ2eXl3bnJscWxxdmdqdHpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0NDE1MjQsImV4cCI6MjA5MjAxNzUyNH0.IeS8h8ptvZJoFU_pR7JuCQooAp4lxw2TFTwn7zZV8Uc';
-const supabaseLogin = window.supabase.createClient(supabaseUrl, supabaseKey);
+const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-function buildPage(event) {
-    event.preventDefault();
-    // نمسك حاوية التبديل لنعرف الحالة الحالية
-    const toggleSwitch = document.getElementById('toggleSwitch');
+async function buildPage(event) {
+    event.preventDefault(); // منع تحديث الصفحة
     
-    // نفحص هل كلاس 'admin-active' موجود حالياً؟
+    // فحص هل المفتاح على وضع الأدمن أم اليوزر
     const isAdminActive = toggleSwitch.classList.contains('admin-active');
-
+    
+    let email, password;
+    
     if (isAdminActive) {
-        // إذا كان المفتاح على الأدمن، وجهه لصفحة الإدارة
+        // سحب البيانات من فورم الأدمن
+        email = document.getElementById('admin-id').value;
+        password = document.getElementById('admin-pass').value;
+    } else {
+        // سحب البيانات من فورم اليوزر
+        email = document.getElementById('user-id').value;
+        password = document.getElementById('user-pass').value;
+    }
+
+    // محاولة تسجيل الدخول الفعلية عبر Supabase
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email: email,
+        password: password
+    });
+
+    if (error) {
+        alert("خطأ في الدخول: الإيميل أو كلمة المرور غير صحيحة.");
+        console.error("Auth Error:", error.message);
+        return;
+    }
+
+    // إذا نجح الدخول، يتم التوجيه بناءً على الحالة
+    if (isAdminActive) {
         window.location.href = "adminPage.html";
     } else {
-        // إذا كان على اليوزر، وجهه لصفحة المستخدم
         window.location.href = "userPage.html";
     }
 }
