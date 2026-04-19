@@ -38,9 +38,17 @@ async function buildPage(event) {
         console.error("Auth Error:", error.message);
         return;
     }
-
     // إذا نجح الدخول، يتم التوجيه بناءً على الحالة
     if (isAdminActive) {
+        const user_id = data.user.id;
+
+        const{adminData, adminError} = await supabaseClient.from('admin').select('id').eq('id',user_id );
+        if (!adminData) {
+            await supabaseClient.auth.signOut();
+            alert("You don't have an Authorization to accsess");
+            return;
+            
+        }
         window.location.href = "adminPage.html";
     } else {
         window.location.href = "userPage.html";
