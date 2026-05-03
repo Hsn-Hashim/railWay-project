@@ -1,6 +1,9 @@
 const supabaseUrl = 'https://mulbvyywnrlqlqvgjtzp.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11bGJ2eXl3bnJscWxxdmdqdHpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0NDE1MjQsImV4cCI6MjA5MjAxNzUyNH0.IeS8h8ptvZJoFU_pR7JuCQooAp4lxw2TFTwn7zZV8Uc';
 const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+const body = document.querySelector("body"),
+      sidebar = body.querySelector(".sidebar"),
+      toggle = body.querySelector(".toggle");
 
 let currentUser = null;
 
@@ -75,10 +78,17 @@ window.bookTrip = async function(tripId) {
 }
 
 // 4. تسجيل الخروج
-document.getElementById('logoutBtn').addEventListener('click', async () => {
+
+document.getElementById('logOut').addEventListener('click', async () => {
     await supabaseClient.auth.signOut();
     window.location.href = "sign-in.html";
 });
+
+      toggle.addEventListener("click", () =>{
+        sidebar.classList.toggle("close")
+      });
+
+      
 
 // تشغيل جدار الحماية فور تحميل الصفحة
 checkAuth();

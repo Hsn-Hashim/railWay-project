@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <title>Home Screen</title>
     <link rel="stylesheet" href="style.css">
+     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         /* تعديلات بسيطة لترتيب الرحلات بدل التوسيط القوي حق شاشة الدخول */
         body { display: block; background-color: #e9ecef; }
@@ -20,10 +22,70 @@
     </style>
 </head>
 <body>
+    <nav class="sidebar close">
+        <header>
+           <div class="image-text">
+            <span class="image">
+                <img src="pics\train2.jpg" alt="train">
+            </span>
+
+            <div class="text header-text">
+                <span class="name">TRAIN</span>
+                <span class="profession">Options</span>
+            </div>
+           </div>
+
+           <i class='bx bx-chevron-right toggle'></i>
+        </header>
+
+        <div class="menu-bar">
+    <div class="menu">
+        <ul class="menu-links">
+            <!-- This is icon -->
+            <li class="nav-link">
+                <a href="#">
+                    <i class="fa-solid fa-receipt icon"></i>
+                    <span class="text nav-text">Reservation</span>
+                </a>
+            </li>
+            <!-- This is end of icon -->
+             <li class="nav-link">
+                <a href="#">
+                    <i class="fa-duotone fa-solid fa-circle-check icon"></i>
+                    <span class="text nav-text">Active Booking</span>
+                </a>
+            </li>
+             <li class="nav-link">
+                <a href="#">
+                    <i class="fa-solid fa-clock-rotate-left icon"></i>
+                    <span class="text nav-text">Booking History</span>
+                </a>
+            </li>
+             <li class="nav-link">
+                <a href="#">
+                    <i class="fa-sharp fa-solid fa-circle-user icon"></i>
+                    <span class="text nav-text">Profile</span>
+                </a>
+            </li>
+
+        </ul>
+    </div>
+
+    <div class="bottom-content">
+        <li class="">
+                <a id="logOut" href="#">
+                    <i class='bx bx-log-out icon'></i>
+                    <span class="text nav-text">Logout</span>
+                </a>
+            </li>
+    </div>
+</div>
+    </nav>
+
     <div class="dashboard">
         <div class="header-bar">
             <h1 style="color: #333;">Available Trips</h1>
-            <button class="sub-button logout-btn" id="logoutBtn">Logout</button>
+            
         </div>
         
         <div id="tripsContainer">
