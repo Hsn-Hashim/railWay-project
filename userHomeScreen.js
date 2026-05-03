@@ -7,12 +7,10 @@ const body = document.querySelector("body"),
 
 let currentUser = null;
 
-// 1. جدار الحماية: التأكد من وجود جلسة نشطة
 async function checkAuth() {
     const { data: { user }, error } = await supabaseClient.auth.getUser();
     
     if (!user || error) {
-        // طرد المستخدم لصفحة الدخول إذا حاول يتجاوز النظام
         window.location.href = "sign-in.html";
         return;
     }
@@ -21,10 +19,9 @@ async function checkAuth() {
     fetchTrips();
 }
 
-// 2. جلب الرحلات من الداتابيس
 async function fetchTrips() {
     const { data: trips, error } = await supabaseClient.from('trips').select('*');
-    const container = document.getElementById('tripsContainer');
+    const container = document.getElementById('Container');
     
     if (error) {
         container.innerHTML = `<p style="color:red;">خطأ في جلب الرحلات: ${error.message}</p>`;
@@ -36,11 +33,9 @@ async function fetchTrips() {
         return;
     }
 
-    container.innerHTML = ''; // تنظيف رسالة التحميل
+    container.innerHTML = '';
 
-    // بناء كرت لكل رحلة موجودة
     trips.forEach(trip => {
-        // تحويل الوقت لصيغة مقروءة
         const departure = new Date(trip.departure_time).toLocaleString();
         const arrival = new Date(trip.arrival_time).toLocaleString();
 
@@ -59,11 +54,9 @@ async function fetchTrips() {
     });
 }
 
-// 3. وظيفة الحجز
 window.bookTrip = async function(tripId) {
     if (!currentUser) return;
 
-    // إدخال سجل جديد في جدول التذاكر
     const { error } = await supabaseClient.from('tickets').insert([
         { user_id: currentUser.id, trip_id: tripId }
     ]);
@@ -73,11 +66,9 @@ window.bookTrip = async function(tripId) {
         alert("فشل الحجز: تأكد من أنك لم تحجز هذه الرحلة مسبقاً أو راجع الـ Console.");
     } else {
         alert("تم الحجز بنجاح!");
-        // لاحقاً هنا نقدر نضيف الكود اللي يولد الـ QR وينقل لصفحة التذكرة
     }
 }
 
-// 4. تسجيل الخروج
 
 document.getElementById('logOut').addEventListener('click', async () => {
     await supabaseClient.auth.signOut();
@@ -87,8 +78,52 @@ document.getElementById('logOut').addEventListener('click', async () => {
       toggle.addEventListener("click", () =>{
         sidebar.classList.toggle("close")
       });
+async function activeBookings(){
 
+
+    const { data: tickets, error } = await supabaseClient.from('tickets').select('*').eq('user_id',currentUser.id);
+        const container = document.getElementById('Container');
+         const head = document.getElementById('head');
+
+
+     if (error) {
+        container.innerHTML = `<p style="color:red;">Error occured!: ${error.message}</p>`;
+        return;
+    }
+    
+    const now = new Date();
+
+const activeTickets = tickets.filter(ticket => {
+    const ticketTime = new Date(ticket.departure_time); 
+    return ticketTime > now;
+});
+head.textContent ='My Tickets';
+if (activeTickets.length === 0){
+    container.innerHTML = `<p>You don't active tickets now.</p>`;
+    return;
+}
+container.innerHTML = '';
+activeTickets.forEach(ticket => {
+        const departure = new Date(ticket.departure_time).toLocaleString();
+
+        const card = document.createElement('div');
+        card.className = 'trip-card';
+       card.innerHTML = `
+    <div class="trip-info">
+        <h3 style="color: #0056b3; margin-bottom: 10px;">${ticket.depart} ➔ ${ticket.arrive}</h3>
+        <p><strong>Departure:</strong> ${departure}</p>
+    </div>
+    
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+        <button class="sub-button" style="margin: 0; width: 100%; padding: 10px 20px;" onclick="showQR('${ticket.id}')">View Ticket</button>
+        <button class="sub-button" style="margin: 0; width: 100%; padding: 10px 20px; background-color: #a90e0b;" onclick="deleteTicket('${ticket.id}')">Delete</button>
+    </div>
+`;
+        container.appendChild(card);
+    });
+    
+
+}
       
 
-// تشغيل جدار الحماية فور تحميل الصفحة
 checkAuth();
