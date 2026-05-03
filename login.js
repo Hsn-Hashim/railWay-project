@@ -32,7 +32,7 @@ async function buildPage(event) {
         email: email,
         password: password
     });
-
+        
     if (error) {
         alert("خطأ في الدخول: الإيميل أو كلمة المرور غير صحيحة.");
         console.error("Auth Error:", error.message);
@@ -42,7 +42,7 @@ async function buildPage(event) {
     if (isAdminActive) {
         const user_id = data.user.id;
 
-        const{adminData, adminError} = await supabaseClient.from('admin').select('id').eq('id',user_id );
+        const{data: adminData, error: adminError} = await supabaseClient.from('admin').select('id').eq('id',user_id ).maybeSingle();
         if (!adminData) {
             await supabaseClient.auth.signOut();
             alert("You don't have an Authorization to accsess");
