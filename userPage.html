@@ -34,7 +34,7 @@
                         <a href="#" onclick="activeBookings(); return false"><i class="fa-duotone fa-solid fa-circle-check icon"></i><span class="text nav-text">Active Booking</span></a>
                     </li>
                     <li class="nav-link">
-                        <a href="#"><i class="fa-solid fa-clock-rotate-left icon"></i><span class="text nav-text">Booking History</span></a>
+                        <a href="#" onclick="BookingHistory()"><i class="fa-solid fa-clock-rotate-left icon"></i><span class="text nav-text">Booking History</span></a>
                     </li>
                     <li class="nav-link">
                         <a href="#"><i class="fa-sharp fa-solid fa-circle-user icon"></i><span class="text nav-text">Profile</span></a>
@@ -61,8 +61,18 @@
             </div>
         </div>
     </section>
+    <!-- نافذة الـ QR Code (مخفية افتراضياً) -->
+<div id="qrPopup" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; justify-content: center; align-items: center;">
+    <div style="background: white; padding: 30px; border-radius: 10px; text-align: center;">
+        <h2 style="margin-bottom: 20px;">Ticket QR Code</h2>
+        <!-- الديف اللي بنرسم داخله الباركود -->
+        <div id="qrcodeBox"></div>
+        <button class="sub-button" style="margin-top: 20px; width: 100%;" onclick="closeQR()">Close</button>
+    </div>
+</div>
 
     <!-- السكربتات -->
+     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="script.js"></script>
     <script src="userHomeScreen.js"></script>

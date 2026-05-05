@@ -28,7 +28,7 @@ body {
 
 /* كلاس الإخفاء العام */
 .hidden {
-    display: none;
+    display: none !important;
 }
 
 /* ==========================================
