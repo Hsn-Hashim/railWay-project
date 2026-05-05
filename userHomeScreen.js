@@ -22,6 +22,8 @@ async function checkAuth() {
 }
 
 async function fetchTrips() {
+        head.textContent ='Available Trips';
+
     const { data: trips, error } = await supabaseClient.from('trips').select('*');
     const container = document.getElementById('Container');
     
@@ -266,5 +268,73 @@ async function getTripById(tripId) {
 
     // 3. إرجاع بيانات الرحلة عشان تستخدمها في مكان ثاني
     return trip;
+}
+window.showProfile = async function() {
+    if (!currentUser) return;
+    head.textContent ='Profile Page';
+
+    // 1. استهداف الحاوية عن طريق الـ id مباشرة (تأكد إن هذا هو اسم الـ id عندك)
+    const container = document.getElementById('Container'); 
+    
+    if (!container) {
+        console.error("لم يتم العثور على الحاوية. تأكد من مطابقة اسم الـ id.");
+        return;
+    }
+
+    // 2. تفريغ الحاوية وبناء مساحة معزولة (padding بدل الأبعاد الكبيرة عشان ما نغطي السايد بار)
+    container.innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; padding: 40px 20px;">
+            <h2 style="margin-bottom: 20px;">Profile</h2>
+            <div id="profile-content-box" style="width: 100%; max-width: 500px;">
+                <!-- سيتم عرض الكرت هنا -->
+            </div>
+        </div>
+    `;
+
+    // 3. جلب بيانات المستخدم
+    const { data: userData, error: userError } = await supabaseClient
+        .from('user')
+        .select('name, national_id, phone, bDate')
+        .eq('id', currentUser.id)
+        .single();
+
+    if (userError) {
+        console.error("Error fetching user data:", userError);
+        document.getElementById('profile-content-box').innerHTML = `<p style="color: red;">حدث خطأ في جلب بيانات المستخدم.</p>`;
+        return;
+    }
+
+    // 4. جلب عدد الحجوزات
+    const { count: ticketsCount } = await supabaseClient
+        .from('tickets')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', currentUser.id);
+
+    // 5. حساب العمر
+    const birthDate = new Date(userData.bDate);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+
+    // 6. بناء الكرت وعرضه
+    const profileCard = document.createElement('div');
+    profileCard.className = 'trip-card';
+    profileCard.style.width = '100%'; 
+    
+    profileCard.innerHTML = `
+        <div class="trip-info" style="font-size: 1.1em; line-height: 1.8;">
+            <p style="margin-bottom: 10px;"><strong>Name:</strong> ${userData.name}</p>
+            <p style="margin-bottom: 10px;"><strong>National ID:</strong> ${userData.national_id}</p>
+            <p style="margin-bottom: 10px;"><strong>Phone:</strong> ${userData.phone}</p>
+            <p style="margin-bottom: 10px;"><strong>Age:</strong> ${age} Years</p>
+            <hr style="margin: 15px 0; border: 0; border-top: 1px solid #ddd;">
+            <p style="color: #0056b3; font-size: 1.2em;"><strong>Total Bookings:</strong> ${ticketsCount || 0}</p>
+        </div>
+    `;
+
+    document.getElementById('profile-content-box').appendChild(profileCard);
 }
 checkAuth();
