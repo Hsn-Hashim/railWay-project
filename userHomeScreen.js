@@ -177,7 +177,31 @@ async function deleteTicket(ticketId){
     const { data, error } = await supabaseClient
   .from('tickets')
   .delete()
-  .eq('id', ticketId);
+  .eq('id', ticketId)
+  .single();
+  if (deleteError) {
+        console.error("Error deleting ticket:", deleteError);
+        alert("حدث خطأ أثناء إلغاء التذكرة.");
+        return; 
+    }
+
+    if (deletedTicket) {
+        const tripId = deletedTicket.trip_id;
+        const trip = await getTripById(tripId); 
+
+        if (trip) {
+            const newSeats = trip.seats + 1;
+
+            const { error: updateError } = await supabaseClient
+                .from('trips')
+                .update({ seats: newSeats })
+                .eq('id', tripId);
+
+            if (updateError) {
+                console.error("Error updating seats after deletion:", updateError);
+            }
+        }
+    }
   await activeBookings();
   
 }
@@ -219,7 +243,6 @@ activeTickets.forEach(ticket => {
     
     <div style="display: flex; flex-direction: column; gap: 10px;">
         <button class="sub-button" style="margin: 0; width: 100%; padding: 10px 20px;" onclick="showQR('${ticket.id}','${ticket.depart}','${ticket.arrive}')">View Ticket</button>
-        <button class="sub-button" style="margin: 0; width: 100%; padding: 10px 20px; background-color: #a90e0b;" onclick="deleteTicket('${ticket.id}')">Delete</button>
     </div>
 `;
         container.appendChild(card);
