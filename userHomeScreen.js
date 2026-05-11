@@ -20,25 +20,76 @@ async function checkAuth() {
     currentUser = user;
     fetchTrips();
 }
-
-async function fetchTrips() {
-        head.textContent ='Available Trips';
-
-    const { data: trips, error } = await supabaseClient.from('trips').select('*');
+window.fetchTrips = async function(departFilter = "", arriveFilter = "") {
     const container = document.getElementById('Container');
+    const head = document.getElementById('head');
     
+    head.textContent = 'Available Trips';
+
+    // 1. نبني الفلاتر + مكان للنتائج داخل الـ Container
+    // استخدمنا شرط 삼 (ternary operator) عشان نحافظ على الخيار محدد بعد ما يضغط بحث
+    container.innerHTML = `
+        <div id="tripFilters" style="display: flex; gap: 15px; margin-bottom: 20px; align-items: center; flex-wrap: wrap;">
+            <select id="departSelect" style="padding: 10px; border-radius: 5px; border: 1px solid #ccc; flex: 1; font-size: 16px;">
+                <option value="">منطقة الخروج (لا تحديد)</option>
+                <option value="Riyadh" ${departFilter === 'Riyadh' ? 'selected' : ''}>Riyadh</option>
+                <option value="Jeddah" ${departFilter === 'Jeddah' ? 'selected' : ''}>Jeddah</option>
+                <option value="Makkah" ${departFilter === 'Makkah' ? 'selected' : ''}>Makkah</option>
+                <option value="Madina" ${departFilter === 'Madina' ? 'selected' : ''}>Madina</option>
+                <option value="Dammam" ${departFilter === 'Dammam' ? 'selected' : ''}>Dammam</option>
+                <option value="Al-Taif" ${departFilter === 'Al-Taif' ? 'selected' : ''}>Al-Taif</option>
+                <option value="Abha" ${departFilter === 'Abha' ? 'selected' : ''}>Abha</option>
+            </select>
+            
+            <select id="arriveSelect" style="padding: 10px; border-radius: 5px; border: 1px solid #ccc; flex: 1; font-size: 16px;">
+                <option value="">منطقة الوصول (لا تحديد)</option>
+                <option value="Riyadh" ${arriveFilter === 'Riyadh' ? 'selected' : ''}>Riyadh</option>
+                <option value="Jeddah" ${arriveFilter === 'Jeddah' ? 'selected' : ''}>Jeddah</option>
+                <option value="Makkah" ${arriveFilter === 'Makkah' ? 'selected' : ''}>Makkah</option>
+                <option value="Madina" ${arriveFilter === 'Madina' ? 'selected' : ''}>Madina</option>
+                <option value="Dammam" ${arriveFilter === 'Dammam' ? 'selected' : ''}>Dammam</option>
+                <option value="Al-Taif" ${arriveFilter === 'Al-Taif' ? 'selected' : ''}>Al-Taif</option>
+                <option value="Abha" ${arriveFilter === 'Abha' ? 'selected' : ''}>Abha</option>
+            </select>
+            
+            <button class="sub-button" style="width: auto; margin: 0; padding: 10px 20px;" onclick="fetchTrips(document.getElementById('departSelect').value, document.getElementById('arriveSelect').value)">بحث</button>
+        </div>
+        <div id="tripsList">
+            <p>جاري البحث...</p>
+        </div>
+    `;
+
+    const tripsList = document.getElementById('tripsList');
+
+    // 2. بناء استعلام قاعدة البيانات بشكل ديناميكي (Dynamic Query)
+    let dbQuery = supabaseClient.from('trips').select('*');
+
+    // إذا اختار منطقة خروج، نضيفها للشرط
+    if (departFilter) {
+        dbQuery = dbQuery.eq('depart', departFilter);
+    }
+    
+    // إذا اختار منطقة وصول، نضيفها للشرط
+    if (arriveFilter) {
+        dbQuery = dbQuery.eq('arrive', arriveFilter);
+    }
+
+    // 3. تنفيذ الاستعلام النهائي
+    const { data: trips, error } = await dbQuery;
+
     if (error) {
-        container.innerHTML = `<p style="color:red;">خطأ في جلب الرحلات: ${error.message}</p>`;
+        tripsList.innerHTML = `<p style="color:red;">خطأ في جلب الرحلات: ${error.message}</p>`;
         return;
     }
 
     if (trips.length === 0) {
-        container.innerHTML = `<p>لا توجد رحلات متاحة حالياً.</p>`;
+        tripsList.innerHTML = `<p>لا توجد رحلات متاحة بهذه المواصفات حالياً.</p>`;
         return;
     }
 
-    container.innerHTML = '';
+    tripsList.innerHTML = '';
 
+    // 4. عرض النتائج المفلترة
     trips.forEach(trip => {
         const departure = new Date(trip.departure_time).toLocaleString();
         const arrival = new Date(trip.arrival_time).toLocaleString();
@@ -52,49 +103,11 @@ async function fetchTrips() {
                 <p><strong>Arrival:</strong> ${arrival}</p>
                 <p><strong>Price:</strong> ${trip.price} SAR</p>
             </div>
-                <button class="sub-button" style="width: auto; padding: 10px 20px;" onclick="bookTrip('${trip.id}')">Book Now</button>        `;
-        container.appendChild(card);
+            <button class="sub-button" style="width: auto; padding: 10px 20px;" onclick="bookTrip('${trip.id}')">Book Now</button>
+        `;
+        tripsList.appendChild(card);
     });
 }
-window.bookTrip = async function(tripId) {
-    if (!currentUser) return;
-    const trip = await getTripById(tripId);
-    if (!trip) {
-        console.error("no trip found");
-        return;
-    }
-    if (trip.seats === 0){
-        alert("Seats is full");
-        return;
-    }
-  
-    const { error } = await supabaseClient.from('tickets').insert([
-        { 
-            user_id: currentUser.id, 
-            trip_id: trip.id, 
-            departure_time: trip.departure_time, 
-            depart: trip.depart, 
-            arrive: trip.arrive 
-        }
-    ]);
-
-    if (error) {
-        console.error(error);
-        alert("فشل الحجز: تأكد من أنك لم تحجز هذه الرحلة مسبقاً أو راجع الـ Console.");
-    } else {
-
-          const newSeats = trip.seats -1;
-    const {data, error: SeatError} = await supabaseClient.from('trips').update({seats: newSeats}).eq('id', tripId) ;
-    if (SeatError) {
-        console.error("something went wrong");
-        return;
-        
-    }
-    alert("Bookins is made sccessfully")
-    }
-}
-
-
 document.getElementById('logOut').addEventListener('click', async () => {
     await supabaseClient.auth.signOut();
     window.location.href = "sign-in.html";
@@ -176,10 +189,11 @@ function closeQR() {
     document.getElementById('qrPopup').classList.add('hidden');
 }
 async function deleteTicket(ticketId){
-    const { data, error } = await supabaseClient
+    const { data: deletedTicket, error: deleteError } = await supabaseClient
   .from('tickets')
   .delete()
   .eq('id', ticketId)
+  .select()
   .single();
   if (deleteError) {
         console.error("Error deleting ticket:", deleteError);
@@ -271,27 +285,20 @@ async function getTripById(tripId) {
 }
 window.showProfile = async function() {
     if (!currentUser) return;
-    head.textContent ='Profile Page';
 
-    // 1. استهداف الحاوية عن طريق الـ id مباشرة (تأكد إن هذا هو اسم الـ id عندك)
+    // استهداف الحاوية وتغيير العنوان الرئيسي
     const container = document.getElementById('Container'); 
+    const head = document.getElementById('head');
     
     if (!container) {
-        console.error("لم يتم العثور على الحاوية. تأكد من مطابقة اسم الـ id.");
+        console.error("لم يتم العثور على حاوية Container.");
         return;
     }
 
-    // 2. تفريغ الحاوية وبناء مساحة معزولة (padding بدل الأبعاد الكبيرة عشان ما نغطي السايد بار)
-    container.innerHTML = `
-        <div style="display: flex; flex-direction: column; align-items: center; padding: 40px 20px;">
-            <h2 style="margin-bottom: 20px;">Profile</h2>
-            <div id="profile-content-box" style="width: 100%; max-width: 500px;">
-                <!-- سيتم عرض الكرت هنا -->
-            </div>
-        </div>
-    `;
+    head.innerText = 'Profile Settings';
+    container.innerHTML = '<p>جاري تحميل البيانات...</p>';
 
-    // 3. جلب بيانات المستخدم
+    // جلب بيانات المستخدم
     const { data: userData, error: userError } = await supabaseClient
         .from('user')
         .select('name, national_id, phone, bDate')
@@ -300,41 +307,74 @@ window.showProfile = async function() {
 
     if (userError) {
         console.error("Error fetching user data:", userError);
-        document.getElementById('profile-content-box').innerHTML = `<p style="color: red;">حدث خطأ في جلب بيانات المستخدم.</p>`;
+        container.innerHTML = `<p style="color: red;">حدث خطأ في جلب بيانات المستخدم.</p>`;
         return;
     }
 
-    // 4. جلب عدد الحجوزات
+    // جلب عدد الحجوزات
     const { count: ticketsCount } = await supabaseClient
         .from('tickets')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', currentUser.id);
 
-    // 5. حساب العمر
-    const birthDate = new Date(userData.bDate);
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const m = today.getMonth() - birthDate.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
-    }
+    // بناء النموذج وعرضه
+    container.innerHTML = `
+        <div style="display: flex; justify-content: center; width: 100%;">
+            <form id="editProfileForm" class="trip-card" style="width: 100%; max-width: 500px; flex-direction: column; align-items: stretch; gap: 10px;">
+                
+                <div class="textInput">
+                    <label>Full Name</label>
+                    <input type="text" id="edit-name" value="${userData.name}" required>
+                </div>
+                
+                <div class="textInput">
+                    <label>National ID (غير قابل للتعديل)</label>
+                    <input type="text" value="${userData.national_id}" disabled style="background-color: #f0f0f0; cursor: not-allowed;">
+                </div>
+                
+                <div class="textInput">
+                    <label>Phone Number</label>
+                    <input type="tel" id="edit-phone" value="${userData.phone}" required>
+                </div>
+                
+                <div class="textInput">
+                    <label>Date of Birth</label>
+                    <input type="date" id="edit-bdate" value="${userData.bDate}" required>
+                </div>
 
-    // 6. بناء الكرت وعرضه
-    const profileCard = document.createElement('div');
-    profileCard.className = 'trip-card';
-    profileCard.style.width = '100%'; 
-    
-    profileCard.innerHTML = `
-        <div class="trip-info" style="font-size: 1.1em; line-height: 1.8;">
-            <p style="margin-bottom: 10px;"><strong>Name:</strong> ${userData.name}</p>
-            <p style="margin-bottom: 10px;"><strong>National ID:</strong> ${userData.national_id}</p>
-            <p style="margin-bottom: 10px;"><strong>Phone:</strong> ${userData.phone}</p>
-            <p style="margin-bottom: 10px;"><strong>Age:</strong> ${age} Years</p>
-            <hr style="margin: 15px 0; border: 0; border-top: 1px solid #ddd;">
-            <p style="color: #0056b3; font-size: 1.2em;"><strong>Total Bookings:</strong> ${ticketsCount || 0}</p>
+                <hr style="margin: 15px 0; border: 0; border-top: 1px solid #ddd;">
+                <p style="color: #0056b3; font-size: 1.1em; margin-bottom: 15px;"><strong>Total Bookings:</strong> ${ticketsCount || 0}</p>
+                
+                <button type="submit" class="sub-button" style="margin: 0;">Save Changes</button>
+            </form>
         </div>
     `;
 
-    document.getElementById('profile-content-box').appendChild(profileCard);
+    // تفعيل عملية التحديث عند إرسال النموذج
+    document.getElementById('editProfileForm').addEventListener('submit', async function(event) {
+        event.preventDefault(); // منع تحديث الصفحة
+
+        const newName = document.getElementById('edit-name').value;
+        const newPhone = document.getElementById('edit-phone').value;
+        const newBdate = document.getElementById('edit-bdate').value;
+
+        // إرسال البيانات الجديدة لقاعدة البيانات
+        const { error: updateError } = await supabaseClient
+            .from('user')
+            .update({ 
+                name: newName, 
+                phone: newPhone, 
+                bDate: newBdate 
+            })
+            .eq('id', currentUser.id);
+
+        if (updateError) {
+            console.error("Error updating profile:", updateError);
+            alert("حدث خطأ أثناء حفظ التعديلات.");
+        } else {
+            alert("تم حفظ التعديلات بنجاح!");
+            showProfile(); // إعادة تحميل الواجهة لعرض البيانات المحدثة
+        }
+    });
 }
 checkAuth();
