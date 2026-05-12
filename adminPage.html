@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-compatible" content="IE-=edge">
+    <meta http-equiv="X-UA-compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <link rel="stylesheet" href="style.css">
-
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-    <title>Menu</title>
+    <title>Admin Dashboard</title>
 </head>
 
 <body>
@@ -22,7 +22,7 @@
 
             <div class="text header-text">
                 <span class="name">TRAIN</span>
-                <span class="profession">Options</span>
+                <span class="profession">Admin Panel</span>
             </div>
            </div>
 
@@ -30,53 +30,59 @@
         </header>
 
         <div class="menu-bar">
-    <div class="menu">
-        <ul class="menu-links">
-            <!-- This is icon -->
-            <li class="nav-link">
-                <a href="#">
-                    <i class='bx bx-home icon'></i>
-                    <span class="text nav-text">Dashboard</span>
-                </a>
-            </li>
-            <!-- This is end of icon -->
-            <li class="nav-link">
-                <a href="#">
-                    <i class='bx bx-map-alt icon'></i>
-                    <span class="text nav-text">Trips</span>
-                </a>
-            </li>
-            <li class="nav-link">
-                <a href="#">
-                    <i class='bx bxs-train icon' ></i>
-                    <span class="text nav-text">Trains</span>
-                </a>
-            </li>
-            <li class="nav-link">
-                <a href="#">
-                    <i class='bx bxs-user icon' ></i>
-                    <span class="text nav-text">Customers</span>
-                </a>
+            <div class="menu">
+                <ul class="menu-links">
+                    <li class="nav-link">
+                        <a href="#" onclick="showDashboard()">
+                            <i class='bx bx-home icon'></i>
+                            <span class="text nav-text">Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="nav-link">
+                        <a href="#" onclick="fetchAdminTrips()">
+                            <i class='bx bx-map-alt icon'></i>
+                            <span class="text nav-text">Trips</span>
+                        </a>
+                    </li>
+                    <li class="nav-link">
+                        <a href="#" onclick="fetchTrains()">
+                            <i class='bx bxs-train icon' ></i>
+                            <span class="text nav-text">Trains</span>
+                        </a>
+                    </li>
+                    <li class="nav-link">
+                        <a href="#" onclick="fetchCustomers()">
+                            <i class='bx bxs-user icon' ></i>
+                            <span class="text nav-text">Customers</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
 
-        </ul>
-    </div>
-
-    <div class="bottom-content">
-        <li class="">
-                <a href="#">
-                    <i class='bx bx-log-out icon'></i>
-                    <span class="text nav-text">Logout</span>
-                </a>
-            </li>
-    </div>
-</div>
+            <div class="bottom-content">
+                <li class="">
+                    <a id="logOutAdmin" href="#">
+                        <i class='bx bx-log-out icon'></i>
+                        <span class="text nav-text">Logout</span>
+                    </a>
+                </li>
+            </div>
+        </div>
     </nav>
 
-
     <section class="home">
-        <div class="text">Dashboard</div>
+        <div class="dashboard">
+            <div class="header-bar">
+                <h1 id="head" style="color: #333;">Admin Dashboard</h1>
+            </div>
+            
+            <div id="Container">
+                <p>Welcome to Admin Panel. Select an option from the menu.</p>
+            </div>
+        </div>
     </section>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="adminHomeScreen.js"></script>
 
 </body>
