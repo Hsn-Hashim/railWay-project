@@ -26,7 +26,7 @@ async function checkAuth() {
 
   if (adminError || !adminData) {
     console.error("Access Denied: User is not an admin.");
-    alert("غير مصرح لك بالدخول إلى هذه الصفحة.");
+    alert("you are now allowed to enter this page.");
 
     // تسجيل خروجه فوراً وطرده لصفحة تسجيل الدخول
     await supabaseClient.auth.signOut();
@@ -43,7 +43,7 @@ window.showDashboard = async function() {
     const head = document.getElementById('head');
     
     head.innerText = 'Admin Dashboard Statistics';
-    container.innerHTML = '<p>جاري تحليل البيانات واستخراج الإحصائيات...</p>';
+    container.innerHTML = '<p>Analyzing data...</p>';
 
     try {
         // 1. جلب الأعداد الإجمالية (Users, Trips, Tickets)
@@ -136,15 +136,17 @@ window.showDashboard = async function() {
 
     } catch (err) {
         console.error("Dashboard Error:", err);
-        container.innerHTML = `<p style="color: red;">تعذر تحميل الإحصائيات: ${err.message}</p>`;
+        container.innerHTML = `<p style="color: red;">Couldn't load: ${err.message}</p>`;
     }
 }
+
+
 window.fetchAdminTrips = async function() {
     const container = document.getElementById('Container');
     const head = document.getElementById('head');
     
     head.innerText = 'Trips Management';
-    container.innerHTML = '<p>جاري تحميل البيانات...</p>';
+    container.innerHTML = '<p>Loading...</p>';
 
     try {
         const { data: trips, error: tripsError } = await supabaseClient.from('trips').select('*').order('departure_time', { ascending: true });
@@ -157,97 +159,15 @@ window.fetchAdminTrips = async function() {
         let cityOptions = cities.map(c => `<option value="${c}">${c}</option>`).join('');
 
         let trainOptions = trains.map(t => {
-            const statusLabel = t.stats ? '' : ' (تحت الصيانة)';
-            return `<option value="${t.id}" data-seats="${t.seats}" data-stats="${t.stats}">Train ${t.id}${statusLabel}</option>`;
-        }).join('');
-
-        // بناء واجهة العرض
-        let html = `
-            <div style="margin-bottom: 20px;">
-                <button class="sub-button" style="width: auto; background-color: #28a745; display: inline-flex; align-items: center; gap: 8px;" onclick="openModal('addTripModal')">
-                    <i class='bx bx-plus'></i> إضافة رحلة جديدة
-                </button>
-            </div>
-            <div id="tripsGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
-        `;
-
-        trips.forEach(trip => {
-            const departure = new Date(trip.departure_time).toLocaleString();
-            const arrival = new Date(trip.arrival_time).toLocaleString();
-            html += `
-                <div class="trip-card" style="flex-direction: column; align-items: stretch;">
-                    <div class="trip-info">
-                        <h3 style="color: #0056b3; margin-bottom: 10px;">${trip.depart} ➔ ${trip.arrive}</h3>
-                        <p><strong>Departure:</strong> ${departure}</p>
-                        <p><strong>Arrival:</strong> ${arrival}</p>
-                        <p><strong>Price:</strong> ${trip.price} SAR</p>
-                        <p><strong>Seats:</strong> ${trip.seats} | <strong>Train:</strong> #${trip.train_id}</p>
-                    </div>
-                    <div style="display: flex; gap: 10px; margin-top: 15px;">
-                        <button class="sub-button" style="margin:0; flex:1; background-color: #ffc107; color: #333;" onclick="openEditModal('${trip.id}')">تعديل</button>
-                        <button class="sub-button" style="margin:0; flex:1; background-color: #a90e0b;" onclick="openDeleteConfirm('${trip.id}')">إلغاء</button>
-                    </div>
-                </div>
-            `;
-        });
-
-        html += `</div>`;
-
-        // إضافة المودالات (Add, Edit, Delete) أسفل الحاوية
-        html += `
-            <div id="addTripModal" class="hidden modal-overlay">${renderTripForm('add', cityOptions, trainOptions)}</div>
-            <div id="editTripModal" class="hidden modal-overlay">${renderTripForm('edit', cityOptions, trainOptions)}</div>
-            <div id="deleteConfirmModal" class="hidden modal-overlay">
-                <div class="modal-box" style="max-width: 400px; text-align: center;">
-                    <i class='bx bx-error-circle' style="font-size: 4em; color: #a90e0b;"></i>
-                    <h2 style="margin: 15px 0;">تأكيد الإلغاء</h2>
-                    <p>هل أنت متأكد من رغبتك في إلغاء هذه الرحلة؟ لا يمكن التراجع عن هذا الإجراء.</p>
-                    <div style="display: flex; gap: 10px; margin-top: 25px;">
-                        <button id="confirmDeleteBtn" class="sub-button" style="margin:0; flex:1; background-color: #a90e0b;">نعم، إلغاء</button>
-                        <button class="sub-button" style="margin:0; flex:1; background-color: #ccc; color: #333;" onclick="closeModal('deleteConfirmModal')">تراجع</button>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        container.innerHTML = html;
-        setupEventListeners();
-
-    } catch (error) {
-        console.error(error);
-        container.innerHTML = `<p style="color: red;">حدث خطأ: ${error.message}</p>`;
-    }
-};
-
-
-window.fetchAdminTrips = async function() {
-    const container = document.getElementById('Container');
-    const head = document.getElementById('head');
-    
-    head.innerText = 'Trips Management';
-    container.innerHTML = '<p>جاري تحميل البيانات...</p>';
-
-    try {
-        const { data: trips, error: tripsError } = await supabaseClient.from('trips').select('*').order('departure_time', { ascending: true });
-        if (tripsError) throw tripsError;
-
-        const { data: trains, error: trainsError } = await supabaseClient.from('trains').select('*');
-        if (trainsError) throw trainsError;
-
-        const cities = ["Riyadh", "Jeddah", "Makkah", "Madina", "Dammam", "Al-Taif", "Abha"];
-        let cityOptions = cities.map(c => `<option value="${c}">${c}</option>`).join('');
-
-        // التعديل هنا: عرض اسم القطار (t.name) بدلاً من الـ ID
-        let trainOptions = trains.map(t => {
-            const statusLabel = t.stats ? '' : ' (تحت الصيانة)';
-            const trainDisplayName = t.name || `Train ${t.id}`; // يستخدم الاسم إذا وجد، وإلا يطبع رقم القطار بشكل مرتب
+            const statusLabel = t.stats ? '' : ' (Under maintenance)';
+            const trainDisplayName = t.name || `Train ${t.id}`; 
             return `<option value="${t.id}" data-seats="${t.seats}" data-stats="${t.stats}">${trainDisplayName}${statusLabel}</option>`;
         }).join('');
 
         let html = `
             <div style="margin-bottom: 20px;">
                 <button class="sub-button" style="width: auto; background-color: #28a745; display: inline-flex; align-items: center; gap: 8px;" onclick="openModal('addTripModal')">
-                    <i class='bx bx-plus'></i> إضافة رحلة جديدة
+                    <i class='bx bx-plus'></i> Add new trip
                 </button>
             </div>
             <div id="tripsGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
@@ -270,8 +190,8 @@ window.fetchAdminTrips = async function() {
                         <p><strong>Seats:</strong> ${trip.seats} | <strong>Train:</strong> ${trainName}</p>
                     </div>
                     <div style="display: flex; gap: 10px; margin-top: 15px;">
-                        <button class="sub-button" style="margin:0; flex:1; background-color: #0056b3;" onclick="openEditModal('${trip.id}')">تعديل</button>
-                        <button class="sub-button" style="margin:0; flex:1; background-color: #a90e0b;" onclick="openDeleteConfirm('${trip.id}')">إلغاء</button>
+                        <button class="sub-button" style="margin:0; flex:1; background-color: #0056b3;" onclick="openEditModal('${trip.id}')">Edit</button>
+                        <button class="sub-button" style="margin:0; flex:1; background-color: #a90e0b;" onclick="openDeleteConfirm('${trip.id}')">Delete</button>
                     </div>
                 </div>
             `;
@@ -279,18 +199,17 @@ window.fetchAdminTrips = async function() {
 
         html += `</div>`;
 
-        // إضافة المودالات
         html += `
             <div id="addTripModal" class="hidden modal-overlay">${renderTripForm('add', cityOptions, trainOptions)}</div>
             <div id="editTripModal" class="hidden modal-overlay">${renderTripForm('edit', cityOptions, trainOptions)}</div>
             <div id="deleteConfirmModal" class="hidden modal-overlay">
                 <div class="modal-box" style="max-width: 400px; text-align: center;">
                     <i class='bx bx-error-circle' style="font-size: 4em; color: #a90e0b;"></i>
-                    <h2 style="margin: 15px 0;">تأكيد الإلغاء</h2>
-                    <p>هل أنت متأكد من رغبتك في إلغاء هذه الرحلة؟ لا يمكن التراجع عن هذا الإجراء.</p>
+                    <h2 style="margin: 15px 0;">Confirmation</h2>
+                    <p>Are you sure you want to cancel this trip? This action cannot be reversed.</p>
                     <div style="display: flex; gap: 10px; margin-top: 25px;">
-                        <button id="confirmDeleteBtn" class="sub-button" style="margin:0; flex:1; background-color: #a90e0b;">نعم، إلغاء</button>
-                        <button class="sub-button" style="margin:0; flex:1; background-color: #ccc; color: #333;" onclick="closeModal('deleteConfirmModal')">تراجع</button>
+                        <button id="confirmDeleteBtn" class="sub-button" style="margin:0; flex:1; background-color: #a90e0b;">Yes, Delete</button>
+                        <button class="sub-button" style="margin:0; flex:1; background-color: #ccc; color: #333;" onclick="closeModal('deleteConfirmModal')">Go back</button>
                     </div>
                 </div>
             </div>
@@ -301,7 +220,7 @@ window.fetchAdminTrips = async function() {
 
     } catch (error) {
         console.error(error);
-        container.innerHTML = `<p style="color: red;">حدث خطأ: ${error.message}</p>`;
+        container.innerHTML = `<p style="color: red;">Error occured: ${error.message}</p>`;
     }
 };
 
@@ -311,49 +230,48 @@ function renderTripForm(type, cityOptions, trainOptions) {
 
     return `
         <div class="modal-box">
-            <h2 style="margin-bottom: 20px;">${isEdit ? 'تعديل بيانات الرحلة' : 'إضافة رحلة جديدة'}</h2>
+            <h2 style="margin-bottom: 20px;">${isEdit ? 'Edit trip information' : 'Add new trip'}</h2>
             <form id="${type}TripForm">
                 <input type="hidden" id="${type}-id">
                 
                 ${!isEdit ? `
                 <div class="textInput">
-                    <label>منطقة الخروج</label>
+                    <label>Depart station</label>
                     <select id="${type}-depart" required style="${inputStyle}">
-                        <option value="" disabled selected>اختر المدينة</option>
+                        <option value="" disabled selected>select city</option>
                         ${cityOptions}
                     </select>
                 </div>
                 <div class="textInput">
-                    <label>منطقة الوصول</label>
+                    <label>Arrive station</label>
                     <select id="${type}-arrive" required style="${inputStyle}">
-                        <option value="" disabled selected>اختر المدينة</option>
+                        <option value="" disabled selected>select city</option>
                         ${cityOptions}
                     </select>
                 </div>
                 ` : ''}
                 
                 <div class="textInput">
-                    <label>القطار المستخدم</label>
+                    <label>Used train</label>
                     <select id="${type}-train" required style="${inputStyle}">
-                        <option value="" disabled selected>اختر القطار</option>
+                        <option value="" disabled selected>select train</option>
                         ${trainOptions}
                     </select>
                 </div>
                 
-                <div class="textInput"><label>السعر (SAR)</label><input type="number" id="${type}-price" required min="1"></div>
-                <div class="textInput"><label>وقت الإقلاع</label><input type="datetime-local" id="${type}-departure-time" required></div>
-                <div class="textInput"><label>وقت الوصول</label><input type="datetime-local" id="${type}-arrival-time" required></div>
+                <div class="textInput"><label>Price (SAR)</label><input type="number" id="${type}-price" required min="1"></div>
+                <div class="textInput"><label>Depart time</label><input type="datetime-local" id="${type}-departure-time" required></div>
+                <div class="textInput"><label>Arrive time</label><input type="datetime-local" id="${type}-arrival-time" required></div>
                 
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
-                    <button type="submit" class="sub-button" style="margin: 0; flex: 1;">حفظ</button>
-                    <button type="button" class="sub-button" style="margin: 0; flex: 1; background-color: #ccc; color: #333;" onclick="closeModal('${type}TripModal')">إغلاق</button>
+                    <button type="submit" class="sub-button" style="margin: 0; flex: 1;">save</button>
+                    <button type="button" class="sub-button" style="margin: 0; flex: 1; background-color: #ccc; color: #333;" onclick="closeModal('${type}TripModal')">close</button>
                 </div>
             </form>
         </div>
     `;
 }
 
-// إعداد المستمعات للأحداث
 function setupEventListeners() {
     // مستمع الإضافة
     document.getElementById('addTripForm')?.addEventListener('submit', (e) => handleTripSubmit(e, 'add'));
@@ -390,7 +308,7 @@ async function handleTripSubmit(e, type) {
         supabaseClient.from('trips').insert([data]);
 
     const { error } = await query;
-    if (error) alert("خطأ: " + error.message);
+    if (error) alert("Error: " + error.message);
     else { alert("تمت العملية بنجاح"); closeModal(`${type}TripModal`); fetchAdminTrips(); }
 }
 
@@ -428,7 +346,7 @@ window.fetchTrains = async function() {
     const head = document.getElementById('head');
     
     head.innerText = 'Trains Management';
-    container.innerHTML = '<p>جاري جلب بيانات القطارات...</p>';
+    container.innerHTML = '<p>Loading...</p>';
 
     try {
         const { data: trains, error: trainsError } = await supabaseClient.from('trains').select('*');
@@ -443,7 +361,7 @@ window.fetchTrains = async function() {
         if (tripsError) throw tripsError;
 
         if (trains.length === 0) {
-            container.innerHTML = '<p>لا توجد قطارات مسجلة في النظام.</p>';
+            container.innerHTML = '<p>No trains on system.</p>';
             return;
         }
 
@@ -461,8 +379,8 @@ window.fetchTrains = async function() {
             // هنا التعديل: استخدمنا اسم العمود الفعلي حقك stats
             const isWorking = train.stats; 
             const btnColor = isWorking ? '#0056b3' : '#a90e0b';
-            const btnText = isWorking ? 'إرسال للصيانة' : 'إخراج من الصيانة';
-            const statusText = isWorking ? '<span style="color: #28a745;">متاح</span>' : '<span style="color: #a90e0b;">تحت الصيانة</span>';
+            const btnText = isWorking ? 'Send to maintenance' : 'Send back from maintenance';
+            const statusText = isWorking ? '<span style="color: #28a745;">Available</span>' : '<span style="color: #a90e0b;">Under maintenance</span>';
 
             const card = document.createElement('div');
             card.className = 'trip-card';
@@ -474,8 +392,8 @@ window.fetchTrains = async function() {
                     <h3 style="color: #333;"><i class="bx bxs-train" style="color: #555;"></i> Train ${train.name}</h3>
                     <strong>${statusText}</strong>
                 </div>
-                <p style="margin-bottom: 10px;"><strong>السعة:</strong> ${train.seats || 0} مقعد</p>
-                <p style="margin-bottom: 15px;"><strong>الرحلات الحالية:</strong> ${trainTripsCount} رحلة نشطة</p>
+                <p style="margin-bottom: 10px;"><strong>Seats:</strong> ${train.seats || 0} </p>
+                <p style="margin-bottom: 15px;"><strong>current trips scheduled:</strong> ${trainTripsCount} trips</p>
                 
                 <button class="sub-button" style="margin: 0; background-color: ${btnColor}; transition: 0.3s;" onclick="toggleTrainStatus('${train.id}', ${isWorking})">
                     ${btnText}
@@ -488,7 +406,7 @@ window.fetchTrains = async function() {
 
     } catch (error) {
         console.error(error);
-        container.innerHTML = `<p style="color: red;">حدث خطأ: ${error.message}</p>`;
+        container.innerHTML = `<p style="color: red;">Error occured: ${error.message}</p>`;
     }
 }
 
@@ -518,7 +436,7 @@ window.fetchCustomers = async function() {
     const head = document.getElementById('head');
     
     head.innerText = 'Customers & Tickets Management';
-    container.innerHTML = '<p>جاري تحميل بيانات العملاء والتذاكر...</p>';
+    container.innerHTML = '<p>Customer data and tickets loading...</p>';
 
     try {
         // 1. جلب كل التذاكر الموجودة
@@ -537,7 +455,7 @@ window.fetchCustomers = async function() {
         if (usersError) throw usersError;
 
         if (tickets.length === 0) {
-            container.innerHTML = '<p>لا توجد تذاكر محجوزة في النظام حالياً.</p>';
+            container.innerHTML = '<p>No tickets available on the system.</p>';
             return;
         }
 
@@ -554,15 +472,15 @@ window.fetchCustomers = async function() {
             html += `
                 <div class="trip-card" style="flex-direction: column; align-items: stretch;">
                     <div class="trip-info">
-                        <h3 style="color: #0056b3; margin-bottom: 10px;"><i class="fa-solid fa-ticket"></i> تذكرة #${ticket.id.slice(0,8)}</h3>
-                        <p><strong>العميل:</strong> ${customer.name}</p>
-                        <p><strong>رقم الهوية:</strong> ${customer.national_id}</p>
+                        <h3 style="color: #0056b3; margin-bottom: 10px;"><i class="fa-solid fa-ticket"></i> Ticket #${ticket.id.slice(0,8)}</h3>
+                        <p><strong>Name:</strong> ${customer.name}</p>
+                        <p><strong>National id:</strong> ${customer.national_id}</p>
                         <hr style="margin: 10px 0; border: 0; border-top: 1px solid #ddd;">
-                        <p><strong>الرحلة:</strong> ${ticket.depart} ➔ ${ticket.arrive}</p>
-                        <p><strong>وقت الإقلاع:</strong> ${departure}</p>
+                        <p><strong>Trip:</strong> ${ticket.depart} ➔ ${ticket.arrive}</p>
+                        <p><strong>Depart time:</strong> ${departure}</p>
                     </div>
                     <div style="margin-top: 15px;">
-                        <button class="sub-button" style="margin:0; width: 100%; background-color: #a90e0b;" onclick="openTicketDeleteConfirm('${ticket.id}', '${ticket.trip_id}')">إلغاء التذكرة</button>
+                        <button class="sub-button" style="margin:0; width: 100%; background-color: #a90e0b;" onclick="openTicketDeleteConfirm('${ticket.id}', '${ticket.trip_id}')">Delete ticket</button>
                     </div>
                 </div>
             `;
@@ -575,11 +493,11 @@ window.fetchCustomers = async function() {
             <div id="deleteTicketModal" class="hidden modal-overlay">
                 <div class="modal-box" style="max-width: 400px; text-align: center;">
                     <i class='bx bx-error-circle' style="font-size: 4em; color: #a90e0b;"></i>
-                    <h2 style="margin: 15px 0;">تأكيد إلغاء التذكرة</h2>
-                    <p>هل أنت متأكد من رغبتك في إلغاء هذه التذكرة؟ سيتم استرجاع المقعد للرحلة ولن يمكن التراجع عن هذا الإجراء.</p>
+                    <h2 style="margin: 15px 0;">Confirmation</h2>
+                    <p>Are you sure you want to cancel this ticket? The seat will be reclaimed for the flight and this action cannot be reversed.</p>
                     <div style="display: flex; gap: 10px; margin-top: 25px;">
-                        <button id="confirmTicketDeleteBtn" class="sub-button" style="margin:0; flex:1; background-color: #a90e0b;">نعم، إلغاء التذكرة</button>
-                        <button class="sub-button" style="margin:0; flex:1; background-color: #ccc; color: #333;" onclick="closeModal('deleteTicketModal')">تراجع</button>
+                        <button id="confirmTicketDeleteBtn" class="sub-button" style="margin:0; flex:1; background-color: #a90e0b;">Yes, delete the ticket</button>
+                        <button class="sub-button" style="margin:0; flex:1; background-color: #ccc; color: #333;" onclick="closeModal('deleteTicketModal')">Go back</button>
                     </div>
                 </div>
             </div>
@@ -589,11 +507,10 @@ window.fetchCustomers = async function() {
 
     } catch (error) {
         console.error("Error fetching customers/tickets:", error);
-        container.innerHTML = `<p style="color: red;">حدث خطأ أثناء جلب البيانات: ${error.message}</p>`;
+        container.innerHTML = `<p style="color: red;">Error occured: ${error.message}</p>`;
     }
 };
 
-// دالة التعامل مع حذف التذكرة من طرف الأدمن
 window.openTicketDeleteConfirm = function(ticketId, tripId) {
     const confirmBtn = document.getElementById('confirmTicketDeleteBtn');
     
@@ -630,7 +547,7 @@ window.openTicketDeleteConfirm = function(ticketId, tripId) {
             
         } catch (error) {
             console.error("Error deleting ticket:", error);
-            alert("حدث خطأ أثناء إلغاء التذكرة: " + error.message);
+            alert("Error occured on deleting: " + error.message);
         }
     };
     
