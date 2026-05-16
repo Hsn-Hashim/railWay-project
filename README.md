@@ -35,6 +35,7 @@ A complete web-based train ticketing and reservation system. It provides a seaml
 
 ### 🚪 Welcome & Authentication
 <p align="center">
+  
   <img src="https://github.com/user-attachments/assets/d635b485-166f-4d4b-92d4-732778bac2cd" width="400" alt="Welcome Screen"/>
   <img src="https://github.com/user-attachments/assets/0ef0c139-2347-4917-b024-6890f4a90202" width="400" alt="Sign Up"/>
   <img src="https://github.com/user-attachments/assets/d38e4f63-e2d6-4a2d-89f7-aafaeae7fa2d" width="400" alt="User Login"/>
