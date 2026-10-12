@@ -2,45 +2,45 @@ const supabaseUrl = 'https://mulbvyywnrlqlqvgjtzp.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11bGJ2eXl3bnJscWxxdmdqdHpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0NDE1MjQsImV4cCI6MjA5MjAxNzUyNH0.IeS8h8ptvZJoFU_pR7JuCQooAp4lxw2TFTwn7zZV8Uc';
 const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 const body = document.querySelector("body"),
-      sidebar = body.querySelector(".sidebar"),
-      toggle = body.querySelector(".toggle");
-      let qrInstance = null;
+    sidebar = body.querySelector(".sidebar"),
+    toggle = body.querySelector(".toggle");
+let qrInstance = null;
 
 
 let currentUser = null;
 
 async function checkAuth() {
     const { data: { user }, error } = await supabaseClient.auth.getUser();
-    
+
     if (!user || error) {
         window.location.href = "sign-in.html";
         return;
     }
-      const { data: userData, error: userError } = await supabaseClient
-    .from('user')
-    .select('id')
-    .eq('id', user.id)
-    .maybeSingle();
+    const { data: userData, error: userError } = await supabaseClient
+        .from('user')
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle();
 
-  if (userError || !userData) {
-    console.error("Access Denied: User is not a user.");
-    alert("you are now allowed to enter this page.");
+    if (userError || !userData) {
+        console.error("Access Denied: User is not a user.");
+        alert("you are now allowed to enter this page.");
 
-    await supabaseClient.auth.signOut();
-    window.location.href = "sign-in.html";
-    return;
-  }
-    
+        await supabaseClient.auth.signOut();
+        window.location.href = "sign-in.html";
+        return;
+    }
+
     currentUser = user;
     fetchTrips();
 }
-window.fetchTrips = async function(departFilter = "", arriveFilter = "") {
+window.fetchTrips = async function (departFilter = "", arriveFilter = "") {
     const container = document.getElementById('Container');
     const head = document.getElementById('head');
-    
+
     head.textContent = 'Available Trips';
 
-  
+
     container.innerHTML = `
         <div id="tripFilters" style="display: flex; gap: 15px; margin-bottom: 20px; align-items: center; flex-wrap: wrap;">
             <select id="departSelect" style="padding: 10px; border-radius: 5px; border: 1px solid #ccc; flex: 1; font-size: 16px;">
@@ -79,7 +79,7 @@ window.fetchTrips = async function(departFilter = "", arriveFilter = "") {
     if (departFilter) {
         dbQuery = dbQuery.eq('depart', departFilter);
     }
-    
+
     if (arriveFilter) {
         dbQuery = dbQuery.eq('arrive', arriveFilter);
     }
@@ -123,40 +123,40 @@ document.getElementById('logOut').addEventListener('click', async () => {
     window.location.href = "sign-in.html";
 });
 
-      toggle.addEventListener("click", () =>{
-        sidebar.classList.toggle("close")
-      });
-async function activeBookings(){
+toggle.addEventListener("click", () => {
+    sidebar.classList.toggle("close")
+});
+async function activeBookings() {
 
 
-    const { data: tickets, error } = await supabaseClient.from('tickets').select('*').eq('user_id',currentUser.id);
-        const container = document.getElementById('Container');
-         const head = document.getElementById('head');
+    const { data: tickets, error } = await supabaseClient.from('tickets').select('*').eq('user_id', currentUser.id);
+    const container = document.getElementById('Container');
+    const head = document.getElementById('head');
 
 
-     if (error) {
+    if (error) {
         container.innerHTML = `<p style="color:red;">Error occured!: ${error.message}</p>`;
         return;
     }
-    
+
     const now = new Date();
 
-const activeTickets = tickets.filter(ticket => {
-    const ticketTime = new Date(ticket.departure_time); 
-    return ticketTime > now;
-});
-head.textContent ='My Tickets';
-if (activeTickets.length === 0){
-    container.innerHTML = `<p>You don't active tickets now.</p>`;
-    return;
-}
-container.innerHTML = '';
-activeTickets.forEach(ticket => {
+    const activeTickets = tickets.filter(ticket => {
+        const ticketTime = new Date(ticket.departure_time);
+        return ticketTime > now;
+    });
+    head.textContent = 'My Tickets';
+    if (activeTickets.length === 0) {
+        container.innerHTML = `<p>You don't active tickets now.</p>`;
+        return;
+    }
+    container.innerHTML = '';
+    activeTickets.forEach(ticket => {
         const departure = new Date(ticket.departure_time).toLocaleString();
 
         const card = document.createElement('div');
         card.className = 'trip-card';
-       card.innerHTML = `
+        card.innerHTML = `
     <div class="trip-info">
         <h3 style="color: #0056b3; margin-bottom: 10px;">${ticket.depart} ➔ ${ticket.arrive}</h3>
         <p><strong>Departure:</strong> ${departure}</p>
@@ -169,7 +169,7 @@ activeTickets.forEach(ticket => {
 `;
         container.appendChild(card);
     });
-    
+
 
 }
 
@@ -185,8 +185,8 @@ function showQR(ticketId) {
             text: ticketId, // النص اللي بيتحول لباركود (هنا حطينا رقم التذكرة)
             width: 200,     // العرض
             height: 200,    // الطول
-            colorDark : "#000000", // لون الباركود
-            colorLight : "#ffffff" // لون الخلفية
+            colorDark: "#000000", // لون الباركود
+            colorLight: "#ffffff" // لون الخلفية
         });
     } else {
         // إذا مبني من قبل، امسح القديم وارسم الجديد برقم التذكرة الجديدة
@@ -194,7 +194,7 @@ function showQR(ticketId) {
         qrInstance.makeCode(ticketId);
     }
 }
-window.bookTrip = async function(tripId) {
+window.bookTrip = async function (tripId) {
     if (!currentUser) return;
 
     const trip = await getTripById(tripId);
@@ -238,27 +238,26 @@ window.bookTrip = async function(tripId) {
     }
 }
 
-
-
 function closeQR() {
     document.getElementById('qrPopup').classList.add('hidden');
 }
-async function deleteTicket(ticketId){
+async function deleteTicket(ticketId) {
     const { data: deletedTicket, error: deleteError } = await supabaseClient
-  .from('tickets')
-  .delete()
-  .eq('id', ticketId)
-  .select()
-  .single();
-  if (deleteError) {
+        .from('tickets')
+        .delete()
+        .eq('id', ticketId)
+        .select()
+        .single();
+    if (deleteError) {
         console.error("Error deleting ticket:", deleteError);
         alert("Error occured!\nFailed to delete the ticket");
-        return; 
+        return;
     }
 
     if (deletedTicket) {
         const tripId = deletedTicket.trip_id;
-        const trip = await getTripById(tripId); 
+        const trip = await getTripById(tripId);
+        alert("Ticket is Deleted suc.");
 
         if (trip) {
             const newSeats = trip.seats + 1;
@@ -273,40 +272,40 @@ async function deleteTicket(ticketId){
             }
         }
     }
-  await activeBookings();
-  
+    await activeBookings();
+
 }
-async function BookingHistory(){
+async function BookingHistory() {
 
 
-    const { data: tickets, error } = await supabaseClient.from('tickets').select('*').eq('user_id',currentUser.id);
-        const container = document.getElementById('Container');
-         const head = document.getElementById('head');
+    const { data: tickets, error } = await supabaseClient.from('tickets').select('*').eq('user_id', currentUser.id);
+    const container = document.getElementById('Container');
+    const head = document.getElementById('head');
 
 
-     if (error) {
+    if (error) {
         container.innerHTML = `<p style="color:red;">Error occured!: ${error.message}</p>`;
         return;
     }
-    
+
     const now = new Date();
 
-const activeTickets = tickets.filter(ticket => {
-    const ticketTime = new Date(ticket.departure_time); 
-    return ticketTime < now;
-});
-head.textContent ='My Ticket History';
-if (activeTickets.length === 0){
-    container.innerHTML = `<p>You don't any Previous tickets.</p>`;
-    return;
-}
-container.innerHTML = '';
-activeTickets.forEach(ticket => {
+    const activeTickets = tickets.filter(ticket => {
+        const ticketTime = new Date(ticket.departure_time);
+        return ticketTime < now;
+    });
+    head.textContent = 'My Ticket History';
+    if (activeTickets.length === 0) {
+        container.innerHTML = `<p>You don't any Previous tickets.</p>`;
+        return;
+    }
+    container.innerHTML = '';
+    activeTickets.forEach(ticket => {
         const departure = new Date(ticket.departure_time).toLocaleString();
 
         const card = document.createElement('div');
         card.className = 'trip-card';
-       card.innerHTML = `
+        card.innerHTML = `
     <div class="trip-info">
         <h3 style="color: #0056b3; margin-bottom: 10px;">${ticket.depart} ➔ ${ticket.arrive}</h3>
         <p><strong>Departure:</strong> ${departure}</p>
@@ -318,7 +317,7 @@ activeTickets.forEach(ticket => {
 `;
         container.appendChild(card);
     });
-    
+
 
 }
 async function getTripById(tripId) {
@@ -326,7 +325,7 @@ async function getTripById(tripId) {
         .from('trips')
         .select('*')
         .eq('id', tripId)
-        .single(); 
+        .single();
 
     if (error) {
         console.error("Error fetching trip:", error.message);
@@ -335,12 +334,12 @@ async function getTripById(tripId) {
 
     return trip;
 }
-window.showProfile = async function() {
+window.showProfile = async function () {
     if (!currentUser) return;
 
-    const container = document.getElementById('Container'); 
+    const container = document.getElementById('Container');
     const head = document.getElementById('head');
-    
+
     if (!container) {
         console.error("لم يتم العثور على حاوية Container.");
         return;
@@ -398,7 +397,7 @@ window.showProfile = async function() {
         </div>
     `;
 
-    document.getElementById('editProfileForm').addEventListener('submit', async function(event) {
+    document.getElementById('editProfileForm').addEventListener('submit', async function (event) {
         event.preventDefault();
 
         const newName = document.getElementById('edit-name').value;
@@ -407,10 +406,10 @@ window.showProfile = async function() {
 
         const { error: updateError } = await supabaseClient
             .from('user')
-            .update({ 
-                name: newName, 
-                phone: newPhone, 
-                bDate: newBdate 
+            .update({
+                name: newName,
+                phone: newPhone,
+                bDate: newBdate
             })
             .eq('id', currentUser.id);
 
@@ -419,7 +418,7 @@ window.showProfile = async function() {
             alert("Error while making the edit.");
         } else {
             alert("sccessfully edited!");
-            showProfile(); 
+            showProfile();
         }
     });
 }

@@ -3,45 +3,130 @@ const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 const body = document.querySelector("body"),
-  sidebar = body.querySelector(".sidebar"),
-  toggle = body.querySelector(".toggle");
+    sidebar = body.querySelector(".sidebar"),
+    toggle = body.querySelector(".toggle");
 let currentUser = null;
 
-async function checkAuth() {
-  // 1. التحقق من وجود جلسة (Session) نشطة للمستخدم
-  const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
 
-  if (!user || authError) {
-    window.location.href = "sign-in.html";
-    return;
-  }
+async function executeAccessControlContingency(incidentDetails = {}) {
+    console.warn("[CONTINGENCY PLAN TRIGGERED - R3: Unverified Access Control]", incidentDetails);
 
-  // 2. التحقق من وجود المستخدم في جدول الإداريين (admin)
-  // نستخدم maybeSingle عشان لو ما لقى نتيجة ما يرمي خطأ برمجي، بل يرجع null
-  const { data: adminData, error: adminError } = await supabaseClient
-    .from('admin')
-    .select('id')
-    .eq('id', user.id)
-    .maybeSingle();
+    // Step 1: Immediate UI Lockdown & Defensive Wipe
+    // Overwrites the DOM immediately to eliminate visual data leakage
+    document.body.innerHTML = `
+    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color:#f4f6f9; color:#333; padding:20px; box-sizing:border-box;">
+      <div style="background:#ffffff; border-top: 5px solid #d90429; border-radius:10px; box-shadow:0 10px 30px rgba(0,0,0,0.1); max-width:480px; width:100%; padding:35px; text-align:center;">
+        <div style="font-size:48px; color:#d90429; margin-bottom:15px; line-height:1;">
+          &#9888;
+        </div>
+        <h2 style="margin:0 0 10px 0; color:#1f2937; font-size:22px; font-weight:700;">Security Alert: Access Denied</h2>
+        <p style="margin:0 0 18px 0; color:#4b5563; font-size:14px; line-height:1.6;">
+          Contingency Plan Activated: You do not possess verified administrative privileges to access this page. 
+          Your session has been terminated and this unauthorized access attempt has been logged.
+        </p>
+        <div style="text-align:left; background:#f9fafb; border:1px solid #e5e7eb; border-radius:6px; padding:12px 14px; margin-bottom:22px; font-size:12px; color:#6b7280; font-family:monospace;">
+          <div><strong>Incident ID:</strong> R3-SEC-${Date.now().toString(36).toUpperCase()}</div>
+          <div><strong>Violation:</strong> ${incidentDetails.reason || 'Unverified Administrative Access Attempt'}</div>
+          <div><strong>Timestamp:</strong> ${new Date().toISOString()}</div>
+        </div>
+        <button id="btnReturnToSignIn" style="background:#1b3b6f; color:#ffffff; border:none; padding:12px 26px; border-radius:6px; font-size:14px; font-weight:600; cursor:pointer; transition:background 0.2s ease;">
+          Return to Sign In
+        </button>
+      </div>
+    </div>
+  `;
 
-  if (adminError || !adminData) {
-    console.error("Access Denied: User is not an admin.");
-    alert("you are now allowed to enter this page.");
+    const returnBtn = document.getElementById('btnReturnToSignIn');
+    if (returnBtn) {
+        returnBtn.addEventListener('click', () => {
+            window.location.replace("sign-in.html");
+        });
+    }
 
-    // تسجيل خروجه فوراً وطرده لصفحة تسجيل الدخول
-    await supabaseClient.auth.signOut();
-    window.location.href = "sign-in.html";
-    return;
-  }
+    // Step 2: Audit Incident Logging
+    try {
+        const auditLogEntry = {
+            risk_id: "R3",
+            risk_title: "Unverified access control",
+            violation_type: incidentDetails.reason || "UNAUTHORIZED_ADMIN_ACCESS_ATTEMPT",
+            timestamp: new Date().toISOString(),
+            attempted_url: window.location.href,
+            user_id: incidentDetails.userId || "UNAUTHENTICATED",
+            user_agent: navigator.userAgent
+        };
 
-  // 3. إذا اجتاز الشروط، نحفظ بياناته ونعرض الواجهة الافتراضية
-  currentUser = user;
-  showDashboard(); // استدعاء الدالة الافتراضية عند نجاح الدخول
+        // Save into local audit trail for inspection and verification
+        const incidentHistory = JSON.parse(localStorage.getItem('railway_security_incident_logs') || '[]');
+        incidentHistory.push(auditLogEntry);
+        localStorage.setItem('railway_security_incident_logs', JSON.stringify(incidentHistory));
+
+        // Optional Supabase logging attempt
+        await supabaseClient.from('security_audit_logs').insert([auditLogEntry]).catch(() => { });
+    } catch (logErr) {
+        console.error("Audit logging error:", logErr);
+    }
+
+    // Step 3: Session Invalidation & Storage Wipe
+    try {
+        await supabaseClient.auth.signOut();
+    } catch (authErr) {
+        console.error("SignOut during contingency execution error:", authErr);
+    }
+
+    // Clear session storage to purge any sensitive memory cached tokens
+    sessionStorage.clear();
+
+    // Step 4: Graceful Redirection fallback
+    setTimeout(() => {
+        window.location.replace("sign-in.html");
+    }, 3500);
 }
-window.showDashboard = async function() {
+
+async function checkAuth() {
+    try {
+        // 1. Verify active session with Supabase Auth
+        const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+
+        if (!user || authError) {
+            console.warn("Unauthenticated attempt detected on admin page.");
+            await executeAccessControlContingency({
+                reason: "Unauthenticated Access Attempt (No Active Session)",
+                userId: null
+            });
+            return;
+        }
+
+        // 2. Verify admin authorization in the 'admin' database table
+        const { data: adminData, error: adminError } = await supabaseClient
+            .from('admin')
+            .select('id')
+            .eq('id', user.id)
+            .maybeSingle();
+
+        if (adminError || !adminData) {
+            console.error("Access Denied: User account is not registered as an administrator.");
+            await executeAccessControlContingency({
+                reason: "Unauthorized Role Escalation (Non-Admin User ID: " + user.id + ")",
+                userId: user.id
+            });
+            return;
+        }
+
+        // 3. User passed authorization check
+        currentUser = user;
+        showDashboard();
+    } catch (err) {
+        console.error("Unexpected error in checkAuth:", err);
+        await executeAccessControlContingency({
+            reason: "Access Verification Exception: " + err.message,
+            userId: currentUser ? currentUser.id : null
+        });
+    }
+}
+window.showDashboard = async function () {
     const container = document.getElementById('Container');
     const head = document.getElementById('head');
-    
+
     head.innerText = 'Admin Dashboard Statistics';
     container.innerHTML = '<p>Analyzing data...</p>';
 
@@ -51,19 +136,33 @@ window.showDashboard = async function() {
         const { count: tripsCount } = await supabaseClient.from('trips').select('*', { count: 'exact', head: true });
         const { count: ticketsCount } = await supabaseClient.from('tickets').select('*', { count: 'exact', head: true });
 
-        // 2. جلب كافة التذاكر لحساب الدخل الزمني
-        const { data: allTickets, error: ticketsError } = await supabaseClient.from('tickets').select('departure_time, depart, arrive');
+        // 2. جلب كافة التذاكر والرحلات لحساب الدخل الزمني الفعلي
+        const { data: allTickets, error: ticketsError } = await supabaseClient
+            .from('tickets')
+            .select('*');
 
         if (ticketsError) throw ticketsError;
 
+        // جلب قائمة الرحلات لمعرفة السعر الفعلي لكل تذكرة مرتبطة برحلة
+        const { data: tripsData, error: tripsError } = await supabaseClient
+            .from('trips')
+            .select('id, price');
+
+        if (tripsError) throw tripsError;
+
+        // بناء خريطة لأسعار الرحلات للوصول السريع إليها
+        const tripPriceMap = {};
+        (tripsData || []).forEach(trip => {
+            tripPriceMap[trip.id] = Number(trip.price) || 0;
+        });
+
         // إعدادات الوقت
         const now = new Date();
-        const startOfDay = new Date(now.setHours(0,0,0,0));
+        const startOfDay = new Date(now.setHours(0, 0, 0, 0));
         const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-        // حساب الدخل (بافتراض 250 ريال لكل رحلة)
-        const tripValue = 250;
+        // حساب الدخل الفعلي بناءً على أسعار التذاكر الحقيقية
         let dailyIncome = 0;
         let weeklyIncome = 0;
         let monthlyIncome = 0;
@@ -73,15 +172,20 @@ window.showDashboard = async function() {
 
         allTickets.forEach(ticket => {
             const ticketDate = new Date(ticket.departure_time);
-            
-            // حساب الدخل
-            if (ticketDate >= startOfDay) dailyIncome += tripValue;
-            if (ticketDate >= startOfWeek) weeklyIncome += tripValue;
-            if (ticketDate >= startOfMonth) monthlyIncome += tripValue;
+
+            // جلب السعر الفعلي للتذكرة: من عمود price في التذكرة، أو من سعر الرحلة trip_id، أو 0 كقيمة افتراضية
+            const actualTicketPrice = Number(ticket.price) || (ticket.trip_id ? tripPriceMap[ticket.trip_id] : 0) || 0;
+
+            // حساب الدخل بناءً على السعر الحقيقي
+            if (ticketDate >= startOfDay) dailyIncome += actualTicketPrice;
+            if (ticketDate >= startOfWeek) weeklyIncome += actualTicketPrice;
+            if (ticketDate >= startOfMonth) monthlyIncome += actualTicketPrice;
 
             // تتبع الوجهات
             const dest = ticket.arrive;
-            destinationStats[dest] = (destinationStats[dest] || 0) + 1;
+            if (dest) {
+                destinationStats[dest] = (destinationStats[dest] || 0) + 1;
+            }
         });
 
         const topDestination = Object.keys(destinationStats).reduce((a, b) => destinationStats[a] > destinationStats[b] ? a : b, "N/A");
@@ -141,10 +245,10 @@ window.showDashboard = async function() {
 }
 
 
-window.fetchAdminTrips = async function() {
+window.fetchAdminTrips = async function () {
     const container = document.getElementById('Container');
     const head = document.getElementById('head');
-    
+
     head.innerText = 'Trips Management';
     container.innerHTML = '<p>Loading...</p>';
 
@@ -160,7 +264,7 @@ window.fetchAdminTrips = async function() {
 
         let trainOptions = trains.map(t => {
             const statusLabel = t.stats ? '' : ' (Under maintenance)';
-            const trainDisplayName = t.name || `Train ${t.id}`; 
+            const trainDisplayName = t.name || `Train ${t.id}`;
             return `<option value="${t.id}" data-seats="${t.seats}" data-stats="${t.stats}">${trainDisplayName}${statusLabel}</option>`;
         }).join('');
 
@@ -284,7 +388,7 @@ async function handleTripSubmit(e, type) {
     const isEdit = type === 'edit';
     const trainSelect = document.getElementById(`${type}-train`);
     const selectedOption = trainSelect.options[trainSelect.selectedIndex];
-    
+
     // التحقق من الصيانة
     if (selectedOption.getAttribute('data-stats') === 'false') {
         alert("رفض: القطار المختار تحت الصيانة."); return;
@@ -303,17 +407,17 @@ async function handleTripSubmit(e, type) {
         data.arrive = document.getElementById('add-arrive').value;
     }
 
-    const query = isEdit ? 
+    const query = isEdit ?
         supabaseClient.from('trips').update(data).eq('id', document.getElementById('edit-id').value) :
         supabaseClient.from('trips').insert([data]);
 
     const { error } = await query;
     if (error) alert("Error: " + error.message);
-    else { alert("تمت العملية بنجاح"); closeModal(`${type}TripModal`); fetchAdminTrips(); }
+    else { alert("executed sccessfully"); closeModal(`${type}TripModal`); fetchAdminTrips(); }
 }
 
 // دالة فتح التعديل وتعبئة البيانات
-window.openEditModal = async function(tripId) {
+window.openEditModal = async function (tripId) {
     const { data: trip } = await supabaseClient.from('trips').select('*').eq('id', tripId).single();
     if (trip) {
         document.getElementById('edit-id').value = trip.id;
@@ -326,7 +430,7 @@ window.openEditModal = async function(tripId) {
     }
 };
 
-window.openDeleteConfirm = function(tripId) {
+window.openDeleteConfirm = function (tripId) {
     const confirmBtn = document.getElementById('confirmDeleteBtn');
     confirmBtn.onclick = async () => {
         const { error } = await supabaseClient.from('trips').delete().eq('id', tripId);
@@ -341,10 +445,10 @@ window.openModal = (id) => document.getElementById(id).classList.remove('hidden'
 window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
 
 
-window.fetchTrains = async function() {
+window.fetchTrains = async function () {
     const container = document.getElementById('Container');
     const head = document.getElementById('head');
-    
+
     head.innerText = 'Trains Management';
     container.innerHTML = '<p>Loading...</p>';
 
@@ -357,7 +461,7 @@ window.fetchTrains = async function() {
             .from('trips')
             .select('train_id')
             .gt('departure_time', now);
-        
+
         if (tripsError) throw tripsError;
 
         if (trains.length === 0) {
@@ -366,7 +470,7 @@ window.fetchTrains = async function() {
         }
 
         container.innerHTML = '';
-        
+
         const grid = document.createElement('div');
         grid.style.display = 'grid';
         grid.style.gridTemplateColumns = 'repeat(auto-fit, minmax(280px, 1fr))';
@@ -375,9 +479,9 @@ window.fetchTrains = async function() {
 
         trains.forEach(train => {
             const trainTripsCount = activeTrips.filter(trip => trip.train_id === train.id).length;
-            
+
             // هنا التعديل: استخدمنا اسم العمود الفعلي حقك stats
-            const isWorking = train.stats; 
+            const isWorking = train.stats;
             const btnColor = isWorking ? '#0056b3' : '#a90e0b';
             const btnText = isWorking ? 'Send to maintenance' : 'Send back from maintenance';
             const statusText = isWorking ? '<span style="color: #28a745;">Available</span>' : '<span style="color: #a90e0b;">Under maintenance</span>';
@@ -386,7 +490,7 @@ window.fetchTrains = async function() {
             card.className = 'trip-card';
             card.style.flexDirection = 'column';
             card.style.alignItems = 'stretch';
-            
+
             card.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                     <h3 style="color: #333;"><i class="bx bxs-train" style="color: #555;"></i> Train ${train.name}</h3>
@@ -410,15 +514,15 @@ window.fetchTrains = async function() {
     }
 }
 
-window.toggleTrainStatus = async function(trainId, currentStatus) {
-    const newStatus = !currentStatus; 
-    
+window.toggleTrainStatus = async function (trainId, currentStatus) {
+    const newStatus = !currentStatus;
+
     // التعديل هنا لعملية التحديث: stats
     const { error } = await supabaseClient
         .from('trains')
         .update({ stats: newStatus })
         .eq('id', trainId);
-        
+
     if (error) {
         console.error("Error updating train status:", error);
         alert("فشل تحديث حالة القطار. راجع الـ Console.");
@@ -427,14 +531,14 @@ window.toggleTrainStatus = async function(trainId, currentStatus) {
     }
 }
 document.getElementById('logOutAdmin').addEventListener('click', async () => {
-  await supabaseClient.auth.signOut();
-  window.location.href = "sign-in.html";
+    await supabaseClient.auth.signOut();
+    window.location.href = "sign-in.html";
 });
 
-window.fetchCustomers = async function() {
+window.fetchCustomers = async function () {
     const container = document.getElementById('Container');
     const head = document.getElementById('head');
-    
+
     head.innerText = 'Customers & Tickets Management';
     container.innerHTML = '<p>Customer data and tickets loading...</p>';
 
@@ -444,14 +548,14 @@ window.fetchCustomers = async function() {
             .from('tickets')
             .select('*')
             .order('departure_time', { ascending: false }); // التذاكر الأحدث أو الأقرب أولاً
-            
+
         if (ticketsError) throw ticketsError;
 
         // 2. جلب بيانات كل المستخدمين لمطابقتها مع التذاكر
         const { data: users, error: usersError } = await supabaseClient
             .from('user')
             .select('id, name, national_id');
-            
+
         if (usersError) throw usersError;
 
         if (tickets.length === 0) {
@@ -472,7 +576,7 @@ window.fetchCustomers = async function() {
             html += `
                 <div class="trip-card" style="flex-direction: column; align-items: stretch;">
                     <div class="trip-info">
-                        <h3 style="color: #0056b3; margin-bottom: 10px;"><i class="fa-solid fa-ticket"></i> Ticket #${ticket.id.slice(0,8)}</h3>
+                        <h3 style="color: #0056b3; margin-bottom: 10px;"><i class="fa-solid fa-ticket"></i> Ticket #${ticket.id.slice(0, 8)}</h3>
                         <p><strong>Name:</strong> ${customer.name}</p>
                         <p><strong>National id:</strong> ${customer.national_id}</p>
                         <hr style="margin: 10px 0; border: 0; border-top: 1px solid #ddd;">
@@ -511,9 +615,9 @@ window.fetchCustomers = async function() {
     }
 };
 
-window.openTicketDeleteConfirm = function(ticketId, tripId) {
+window.openTicketDeleteConfirm = function (ticketId, tripId) {
     const confirmBtn = document.getElementById('confirmTicketDeleteBtn');
-    
+
     // إسناد وظيفة الحذف للزر عند الضغط على تأكيد
     confirmBtn.onclick = async () => {
         try {
@@ -522,7 +626,7 @@ window.openTicketDeleteConfirm = function(ticketId, tripId) {
                 .from('tickets')
                 .delete()
                 .eq('id', ticketId);
-                
+
             if (deleteError) throw deleteError;
 
             // 2. تحديث عدد الكراسي في جدول الرحلات
@@ -532,7 +636,7 @@ window.openTicketDeleteConfirm = function(ticketId, tripId) {
                 .select('seats')
                 .eq('id', tripId)
                 .single();
-            
+
             if (trip && !fetchTripError) {
                 const newSeats = trip.seats + 1;
                 await supabaseClient
@@ -544,19 +648,19 @@ window.openTicketDeleteConfirm = function(ticketId, tripId) {
             // إغلاق النافذة وإعادة تحميل التذاكر
             closeModal('deleteTicketModal');
             fetchCustomers();
-            
+
         } catch (error) {
             console.error("Error deleting ticket:", error);
             alert("Error occured on deleting: " + error.message);
         }
     };
-    
+
     // إظهار نافذة التأكيد
     openModal('deleteTicketModal');
 };
 
 toggle.addEventListener("click", () => {
-  sidebar.classList.toggle("close")
+    sidebar.classList.toggle("close")
 });
 
 
